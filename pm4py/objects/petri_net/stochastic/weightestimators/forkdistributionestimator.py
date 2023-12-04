@@ -481,4 +481,4 @@ def view(gviz: graphviz.Digraph, parameters=None):
 log = pm4py.read_xes(os.path.join("..", "tests", "input_data", "example_12.xes"))
 net, im, fm = use_inductive_miner_petrinet_discovery(log)
 spn = discover_stochastic_petrinet(log, net, im, fm)
-view_stochastic_petri_net(net, im, fm, format="svg")
+view_stochastic_petri_net(spn, im, fm, format="svg")

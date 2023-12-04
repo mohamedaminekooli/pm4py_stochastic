@@ -1,15 +1,26 @@
 # number of places
 6
-# intial marking
-0
-0
-0
-0
+# initial marking
 1
+0
+0
+0
+0
 0
 # number of transitions
 6
-# transition 4b28afa0-d0c9-41e6-94c5-6aa99cfd44af
+# transition 505a688a-3f22-4a88-884f-64e2dc18efb2
+label a
+# weight
+12.0
+# number of input places
+1
+source
+# number of output places
+2
+p_7
+p_10
+# transition f7619b9c-3882-4b50-92b0-ebea56ea738d
 label b
 # weight
 15.0
@@ -29,28 +40,6 @@ p_8
 # number of output places
 1
 p_7
-# transition b225cc62-d90e-47cc-b98b-8041ccafb3a0
-label d
-# weight
-12.0
-# number of input places
-2
-p_8
-p_11
-# number of output places
-1
-sink
-# transition c7ddaa4a-ff8b-41e7-8498-9af74b9e978d
-label a
-# weight
-12.0
-# number of input places
-1
-source
-# number of output places
-2
-p_10
-p_7
 # transition skip_7
 silent
 # weight
@@ -61,7 +50,7 @@ p_10
 # number of output places
 1
 p_11
-# transition 5608c42b-7949-4af9-8e0f-fff5851ccb02
+# transition 5176a249-af95-469d-a261-695c1f193894
 label c
 # weight
 10.0
@@ -71,3 +60,14 @@ p_10
 # number of output places
 1
 p_11
+# transition 8f2fed04-8241-4612-81b9-1445d8fbcd5e
+label d
+# weight
+12.0
+# number of input places
+2
+p_8
+p_11
+# number of output places
+1
+sink
