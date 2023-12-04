@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<log xes.version="1849-2016" xes.features="nested-attributes" xmlns="http://www.xes-standard.org/">
+	<extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext" />
+	<extension name="Organizational" prefix="org" uri="http://www.xes-standard.org/org.xesext" />
+	<extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext" />
+	<string key="origin" value="csv" />
+	<trace>
+		<string key="concept:name" value="1" />
+		<string key="creator" value="Fluxicon Nitro" />
+		<event>
+			<string key="concept:name" value="register request" />
+			<string key="org:resource" value="Pete" />
+			<date key="time:timestamp" value="2010-12-30T10:02:00+00:00" />
+			<string key="Activity" value="register request" />
+			<string key="Resource" value="Pete" />
+			<string key="Costs" value="50" />
+		</event>
+		<event>
+			<string key="concept:name" value="examine thoroughly" />
+			<string key="org:resource" value="Sue" />
+			<date key="time:timestamp" value="2010-12-31T09:06:00+00:00" />
+			<string key="Activity" value="examine thoroughly" />
+			<string key="Resource" value="Sue" />
+			<string key="Costs" value="400" />
+		</event>
+		<event>
+			<string key="concept:name" value="check ticket" />
+			<string key="org:resource" value="Mike" />
+			<date key="time:timestamp" value="2011-01-05T14:12:00+00:00" />
+			<string key="Activity" value="check ticket" />
+			<string key="Resource" value="Mike" />
+			<string key="Costs" value="100" />
+		</event>
+		<event>
+			<string key="concept:name" value="decide" />
+			<string key="org:resource" value="Sara" />
+			<date key="time:timestamp" value="2011-01-06T10:18:00+00:00" />
+			<string key="Activity" value="decide" />
+			<string key="Resource" value="Sara" />
+			<string key="Costs" value="200" />
+		</event>
+		<event>
+			<string key="concept:name" value="reject request" />
+			<string key="org:resource" value="Pete" />
+			<date key="time:timestamp" value="2011-01-07T13:24:00+00:00" />
+			<string key="Activity" value="reject request" />
+			<string key="Resource" value="Pete" />
+			<string key="Costs" value="200" />
+		</event>
+	</trace>
+</log>
