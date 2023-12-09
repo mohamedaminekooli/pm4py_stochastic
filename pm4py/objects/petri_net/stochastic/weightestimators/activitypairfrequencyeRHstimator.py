@@ -265,13 +265,9 @@ def graphviz_visualization(net:StochasticPetriNet, image_format="png", initial_m
         if debug:
             weight = t.weight
         weight = str(weight)
-        if t.label is not None:
-            label += f" ({weight})"
-        else:
-            # Create a separate node for the weight and connect it to the transition
-            weight_node_name = f"Weight_{t}"
-            viz.node(weight_node_name, f"Weight: {weight}", shape='plaintext')
-            viz.edge(weight_node_name, str(id(t)), style='dashed', constraint='false', len='0.1')
+        label += f" ({weight})"
+        if t.label is None:
+            textcolor = "white"
 
         viz.node(str(id(t)), label, style='filled', fillcolor=fillcolor, border='1', fontsize=font_size, fontcolor=textcolor)
 
@@ -471,4 +467,4 @@ def view(gviz: graphviz.Digraph, parameters=None):
 log = pm4py.read_xes(os.path.join("..", "tests", "input_data", "example_12.xes"))
 net, im, fm = use_inductive_miner_petrinet_discovery(log)
 spn = discover_stochastic_petrinet(log, net, im, fm)
-view_stochastic_petri_net(spn, im, fm, format="svg")
+view_stochastic_petri_net(spn, im, format="svg")

@@ -43,8 +43,7 @@ class Alignmentestimator:
         params[param.PARAM_MODEL_COST_FUNCTION] = model_cost_function
         params[param.PARAM_TRACE_COST_FUNCTION] = trace_costs
         params[param.PARAM_SYNC_COST_FUNCTION] = sync_cost_function
-        return ali.petri_net.algorithm.apply_trace(trace, net, im, fm, parameters=params,
-                                    variant=ali.petri_net.algorithm.VERSION_STATE_EQUATION_A_STAR)
+        return ali.petri_net.algorithm.apply(trace, net, im, fm, parameters=params)
 
     def walign(self):
         model_cost_function = dict()
@@ -57,17 +56,21 @@ class Alignmentestimator:
                 model_cost_function[t] = 1
 
         alignments = []
+        silents_occurencies = {}
         for trace in self.log:
-            alignments.append(self.align(trace, self.net, self.im, self.fm, model_cost_function, sync_cost_function))
-        
+            alignment= self.align(trace, self.net, self.im, self.fm, model_cost_function, sync_cost_function)
+            alignments.append(alignment)
+        for alignment in alignments:
+            for transition, occurency in alignment['silent_occurence'].items():
+                silents_occurencies[transition] = silents_occurencies.get(transition, 0.0) + occurency
         #pretty_print_alignments(alignments)
-        pretty_print_alignments(alignments)
         walign={}
         # Count occurrences of the transition in the alignments
         for transition in self.net.transitions:
-            print(transition)
-            walign[transition] = sum(1 for alignment in alignments for event in alignment['alignment'] if event[1] == transition.label)
-            print(f"walign for transition {transition}: {walign[transition]}")
+            if transition.label is not None:
+                walign[transition] = sum(1 for alignment in alignments for event in alignment['alignment'] if event[1] == transition.label)
+            else:
+                walign[transition] = silents_occurencies[transition.name]
 
         return walign
     # Calculate transition weights based on event frequencies
@@ -259,13 +262,9 @@ def graphviz_visualization(net:StochasticPetriNet, image_format="png", initial_m
         if debug:
             weight = t.weight
         weight = str(weight)
-        if t.label is not None:
-            label += f" ({weight})"
-        else:
-            # Create a separate node for the weight and connect it to the transition
-            weight_node_name = f"Weight_{t}"
-            viz.node(weight_node_name, f"Weight: {weight}", shape='plaintext')
-            viz.edge(weight_node_name, str(id(t)), style='dashed', constraint='false', len='0.1')
+        label += f" ({weight})"
+        if t.label is None:
+            textcolor = "white"
 
         viz.node(str(id(t)), label, style='filled', fillcolor=fillcolor, border='1', fontsize=font_size, fontcolor=textcolor)
 
@@ -466,5 +465,5 @@ log = pm4py.read_xes(os.path.join("..", "tests", "input_data", "example_12.xes")
 net, im, fm = use_inductive_miner_petrinet_discovery(log)
 #weights = walign(fm)
 spn = discover_stochastic_petrinet(log, net, im, fm)
-view_stochastic_petri_net(spn, im, fm, format="svg")
+view_stochastic_petri_net(spn, im, format="svg")
 # apply(spn, im, fm, format="svg")

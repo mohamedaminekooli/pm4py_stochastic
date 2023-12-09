@@ -223,13 +223,9 @@ def graphviz_visualization(net:StochasticPetriNet, image_format="png", initial_m
         if debug:
             weight = t.weight
         weight = str(weight)
-        if t.label is not None:
-            label += f" ({weight})"
-        else:
-            # Create a separate node for the weight and connect it to the transition
-            weight_node_name = f"Weight_{t}"
-            viz.node(weight_node_name, f"Weight: {weight}", shape='plaintext')
-            viz.edge(weight_node_name, str(id(t)), style='dashed', constraint='false', len='0.1')
+        label += f" ({weight})"
+        if t.label is None:
+            textcolor = "white"
 
         viz.node(str(id(t)), label, style='filled', fillcolor=fillcolor, border='1', fontsize=font_size, fontcolor=textcolor)
 
@@ -447,14 +443,19 @@ def export_petri_to_slpn(StochasticPetriNet, marking, output_filename):
         file.write(f"# number of places\n{num_places}\n")
         # Write the initial marking
         file.write(f"# initial marking\n")
-        for place in StochasticPetriNet.places:
+        places_sort_list_im = sorted([x for x in list(net.places) if x in im], key=lambda x: x.name)
+        places_sort_list_not_im = sorted(
+        [x for x in list(net.places) if x not in im], key=lambda x: x.name)
+        sorted_places = places_sort_list_im+places_sort_list_not_im
+        for place in sorted_places:
             marking_value = marking[place] if place in marking else 0
             file.write(f"{marking_value}\n")
         # Write the number of transitions
         file.write(f"# number of transitions\n{num_transitions}\n")
         # Write information for each transition
+        tran_num = 0
         for transition in StochasticPetriNet.transitions:
-            file.write(f"# transition {transition.name}\n")
+            file.write(f"# transition {tran_num}\n")
             # Write the label (silent or actual label)
             if transition.label is not None:
                 file.write(f"label {transition.label}\n")
@@ -466,105 +467,104 @@ def export_petri_to_slpn(StochasticPetriNet, marking, output_filename):
             file.write(f"# number of input places\n{len(transition.in_arcs)}\n")
             # Write the input places
             for arc in transition.in_arcs:
-                file.write(f"{arc.source}\n")
+                index_place = sorted_places.index(arc.source)
+                file.write(f"{index_place}\n")
             # Write the number of output places
             file.write(f"# number of output places\n{len(transition.out_arcs)}\n")
             # Write the output places
             for arc in transition.out_arcs:
-                file.write(f"{arc.target}\n")
-                
+                index_place = sorted_places.index(arc.target)
+                file.write(f"{index_place}\n")
+            tran_num += 1
+
+from pm4py.objects.petri_net.utils.petri_utils import add_arc_from_to_spn
+
 def import_slpn(file_path):
     spn = StochasticPetriNet()
     marking = Marking()
     with open(file_path, 'r') as file:
         lines = file.readlines()
-        current_section = None
-        current_transition = None
-        #spn.places = set()
-        for idx, line in enumerate(lines):
-            line = line.strip()
-            if line.startswith("# number of places"):
-                current_section = "places"
-            elif line.startswith("# initial marking"):
-                current_section = "marking"
-            elif line.startswith("# number of transitions"):
-                current_section = "transitions"
-            elif line.startswith("# transition"):
-                current_transition = spn.Transition(line.split(" ")[2])
-                current_transition.name = line.split(" ")[2]
-                spn.transitions.add(current_transition)
-                current_section = "transition"
-            elif line.startswith("label"):
-                current_transition.label = line.split(" ")[1]
-            elif line.startswith("# weight"):
-                current_transition.weight = float(lines[idx + 1])
-            elif line.startswith("# number of input places"):
-                current_section = "input_places"
-                num_input_places = int(lines[idx + 1])
+        idx = 0
+        number_places = 0
+        number_transitions = 0
+        j = 0
+        while idx < len(lines):
+            line = lines[idx].strip()
+            if line.startswith("#"):
+                idx += 1
+                continue
+            if line.startswith("label") or line.startswith("silent"):
+                name = f"t{j}"
+                label = line.split(" ")[1] if line.startswith("label") else None
+                transition = StochasticPetriNet.Transition(name, label)
+                spn.transitions.add(transition)
+                idx += 1
+                while lines[idx].startswith("#"):
+                    idx += 1
+                transition.weight = float(lines[idx])
+                idx += 1
+                while lines[idx].startswith("#"):
+                    idx += 1
+                num_input_places = int(lines[idx])
                 for _ in range(num_input_places):
-                    current_transition.in_arcs.add(lines[idx + 2 + _].strip())
-                    place_name = lines[idx + 2 + _].strip()
-                    if place_name not in spn.places:
-                        spn.places.add(place_name)
-            elif line.startswith("# number of output places"):
-                current_section = "output_places"
-                num_output_places = int(lines[idx + 1])
+                    idx += 1
+                    place_id = lines[idx].strip()
+                    for place in spn.places:
+                        if place_id == place.name:
+                            source = place
+                            break
+                    target = transition
+                    arc = add_arc_from_to_spn(source, target, spn)
+                    spn.arcs.add(arc)
+                    #transition.in_arcs.add(place_name)
+                idx += 1
+                while lines[idx].startswith("#"):
+                    idx += 1
+                num_output_places = int(lines[idx])
                 for _ in range(num_output_places):
-                    current_transition.out_arcs.add(lines[idx + 2 + _].strip())
-                    place_name = lines[idx + 2 + _].strip()
-                    if place_name not in spn.places:
-                        spn.places.add(place_name)
-        for idx, line in enumerate(lines):
-            line = line.strip() 
-            if line.startswith("# initial marking"):
-                current_section = "marking"
-                for _, place_name in enumerate(spn.places):
-                    place = StochasticPetriNet.Place(place_name)
-                    marking[place] = int(lines[idx + 1 + _].strip())
-    spn = convert_to_spn(spn)
+                    idx += 1
+                    place_id = lines[idx].strip()
+                    for place in spn.places:
+                        if place_id == place.name:
+                            target = place
+                            break
+                    if not target in spn.places:
+                        spn.places.add(target)
+                    source = transition
+                    arc = add_arc_from_to_spn(source, target, spn)
+                    spn.arcs.add(arc)
+                idx += 1
+                j += 1
+            elif not number_places:
+                number_places = int(line)
+                idx += 1
+                while lines[idx].startswith("#"):
+                    idx += 1
+                for i in range(number_places):
+                    place_id = str(i)
+                    place = StochasticPetriNet.Place(place_id)
+                    spn.places.add(place)
+                    if int((lines[idx].strip())):
+                        marking[place] = int(lines[idx].strip())
+                    idx += 1
+            elif not number_transitions:
+                number_transitions = int(line)
+                idx += 1
     return spn, marking
 
-def convert_to_spn(spn):
-    stochastic_petri_net = StochasticPetriNet()
-    for place_name in spn.places:
-        place = StochasticPetriNet.Place(place_name)
-        stochastic_petri_net.places.add(place)
-    for transition in spn.transitions:
-        new_transition = StochasticPetriNet.Transition(transition.name, transition.label, weight=transition.weight)
-        stochastic_petri_net.transitions.add(new_transition)
-        for input_place_name in transition.in_arcs:
-            input_place = StochasticPetriNet.Place(input_place_name)
-            arc = StochasticPetriNet.Arc(input_place, new_transition)
-            stochastic_petri_net.arcs.add(arc)
-        for output_place_name in transition.out_arcs:
-            output_place = StochasticPetriNet.Place(output_place_name)
-            arc = StochasticPetriNet.Arc(new_transition, output_place)
-            stochastic_petri_net.arcs.add(arc)
-    return stochastic_petri_net
-
 def import_spln_script():
-    spn, im = import_slpn("AbstractFrequencyEstimator_example_12.slpn")
-    fm=None
-    view_stochastic_petri_net(spn, im, fm, format="svg")
+    spn, im = import_slpn(os.path.join("..", "tests", "AbstractFrequencyEstimator_example_12.slpn"))
+    view_stochastic_petri_net(spn, im, format="svg")
 
-    for place in spn.places:
-        print(place)
-    for transition in spn.transitions:
-        print(transition)
-        for input_place in transition.in_arcs:
-            print(input_place, transition.name)
-        for output_place in transition.out_arcs:
-            print(output_place, transition.name)
-    print(f"im: {im}")
+import_spln_script()
     
 # Usage example:
-log = pm4py.read_xes(os.path.join("..", "tests", "input_data", "example_12.xes"))
-net, im, fm = use_inductive_miner_petrinet_discovery(log)
-spn = discover_stochastic_petrinet(log, net, im, fm)
-view_stochastic_petri_net(spn, im, fm, format="svg")
+#log = pm4py.read_xes(os.path.join("..", "tests", "input_data", "example_12.xes"))
+#net, im, fm = use_inductive_miner_petrinet_discovery(log)
+#spn = discover_stochastic_petrinet(log, net, im, fm)
+#view_stochastic_petri_net(spn, im, format="svg")
 
-def export_spln_script():
-    export_petri_to_slpn(spn, im, "AbstractFrequencyEstimator_example_12.slpn")
+#def export_spln_script():
+#    export_petri_to_slpn(spn, im, os.path.join("..", "tests", "AbstractFrequencyEstimator_example_12.slpn"))
 
 #export_spln_script()
-#import_spln_script()
